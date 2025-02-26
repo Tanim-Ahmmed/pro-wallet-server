@@ -167,6 +167,40 @@ async function run() {
     });
 
 
+    //send money user to user
+    app.post("/sendMoney", async (req, res) => {
+      const { sender, receiver, amount } = req.body;
+      const fee = amount >= 100 ? 5 : 0;
+      const totalDeduction = amount + fee;
+      await usersCollection.updateOne(
+        { phone: sender },
+        { $inc: { balance: -totalDeduction } }
+      );
+
+      await usersCollection.updateOne(
+        { phone: receiver },
+        { $inc: { balance: amount } }
+      );
+
+      await usersCollection.updateOne(
+        { role: "admin" },
+        { $inc: { balance: 5 } }
+      );
+
+
+      const transaction = {
+        sender,
+        receiver,
+        amount,
+        type: "Send Money",
+        timestamp: new Date(),
+      };
+      const result =  await transactionsCollection.insertOne(transaction);
+      res.send(result);
+    });
+
+
+
       //cash Out agent to user
 
       app.post("/cashOut", verifyToken, async (req, res) => {
