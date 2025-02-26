@@ -133,6 +133,30 @@ async function run() {
       res.send({ agent });
     });
 
+    app.patch("/users/agents/:phone", async (req, res)=>{
+      const phone = req.params.phone;
+      const filter = {phone: phone};
+      const updatedDoc ={
+        $set: {
+          status : "approved"
+        }
+      }
+      const result = await usersCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    })
+
+    app.patch("/users/user/:phone", async (req, res)=>{
+      const phone = req.params.phone;
+      const filter = {phone: phone};
+      const updatedDoc ={
+        $set: {
+          status : "blocked"
+        }
+      }
+      const result = await usersCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    })
+
     app.get("/users/email/:email", async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
@@ -184,7 +208,7 @@ async function run() {
 
       await usersCollection.updateOne(
         { role: "admin" },
-        { $inc: { balance: 5 } }
+        { $inc: {totalIncome: 5 } }
       );
 
 
@@ -199,23 +223,29 @@ async function run() {
       res.send(result);
     });
 
-
-
       //cash Out agent to user
 
-      app.post("/cashOut", verifyToken, async (req, res) => {
+      app.post("/cashOut", async (req, res) => {
         const { sender, receiver, amount } = req.body;
-  
+        const feeAgent = (amount * 1) / 100;
+        const feeAdmin = (amount *.5) / 100;
+        const totalDeduction = amount + feeAdmin + feeAgent;
+        const totalIncrement = amount + feeAgent;
         await usersCollection.updateOne(
           { phone: sender },
-          { $inc: { balance: -amount } }
+          { $inc: { balance: -totalDeduction } }
         );
   
         await usersCollection.updateOne(
           { phone: receiver },
-          { $inc: { balance: amount } }
+          { $inc: { balance: totalIncrement } }
         );
   
+        await usersCollection.updateOne(
+          { role: "admin" },
+          { $inc: { totalIncome: feeAdmin } }
+        );
+         
         const transaction = {
           sender,
           receiver,
@@ -226,7 +256,6 @@ async function run() {
         const result =  await transactionsCollection.insertOne(transaction);
         res.send(result);
       });
-  
 
 
     app.get("/transection", async (req, res) => {
