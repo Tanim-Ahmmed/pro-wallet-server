@@ -27,9 +27,7 @@ async function run() {
     // await client.connect();
 
     const usersCollection = client.db("proWallet").collection("users");
-    const transactionsCollection = client
-      .db("proWallet")
-      .collection("transactions");
+    const transactionsCollection = client.db("proWallet").collection("transactions");
 
     //jwt related routes
 
